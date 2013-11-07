@@ -2,35 +2,47 @@
  * Detect jQuery version and plugins on the page
  * Copyright (c) 2013 Ariel Flesler - aflesler[a]gmail[d]com
  * @author Ariel Flesler
- * @version 0.9.0
+ * @version 1.0.1
  */
-javascript:(function(){
-	var $ = window.jQuery;
+javascript:(function($){
 	if (!$) return alert('jQuery not included');
 
-	var version = $.fn.jquery,
-		script = document.createElement('script');
+	function load(url, success) {
+		var script = document.createElement('script');
+		script.type = 'text/javascript';
+		script.src = url;
+		script.onload = success;
+		script.onerror = function(){
+			alert('Could not load '+url);
+		};
+		document.documentElement.lastChild.appendChild(script);
+	}
 
-	script.type = 'text/javascript';
-	script.src = 'https://code.jquery.com/jquery-'+version+'.min.js';
-	script.onload = function() {
+	var jQv = $.fn.jquery, UIv;
+
+	load('https://code.jquery.com/jquery-'+jQv+'.min.js', function() {
+		if ($.ui) {
+			UIv = $.ui.version;
+			load('https://code.jquery.com/ui/'+UIv+'/jquery-ui.min.js', check);
+		} else {
+			check();
+		}
+	});
+
+	function check() {
 		var plugins = [''];
 		compare(plugins, $, jQuery);
 		compare(plugins, $.fn, jQuery.fn);
-		jQuery = $;
+		window.$ = jQuery = $;
 
-		alert('Found jQuery '+version +'\nPlugins:'+plugins.sort().join('\n * '));
-	};
-	script.onerror = function(){
-		alert('Could not load jQuery '+version);
-	};
-	document.documentElement.lastChild.appendChild(script);
+		alert('Found jQuery '+ jQv + (UIv ? ' and UI '+UIv : '') +'\nPlugins:'+plugins.sort().join('\n * '));
+	}
 
 	function compare(list, lib, base) {
 		for (var key in lib) {
-			if (!base[key] && typeof lib[key] === 'function' && list.indexOf(key) === -1) {
+			if (key.charAt(0) !== '_' && !base[key] && typeof lib[key] === 'function' && list.indexOf(key) === -1) {
 				list.push(key);
 			}
 		}
 	}
-})();
+})(window.jQuery);
